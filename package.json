@@ -6,6 +6,13 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "dependencies": {
+    "chalk": "5.1.2",
+    "ora": "6.1.2",
+    "pg": "8.8.0",
+    "loglevel": "1.8.1",
+    "sha.js": "2.4.11"
+  },
   "author": "",
   "license": "ISC"
 }

@@ -27,15 +27,12 @@ import loglevel from 'loglevel';
 import ora from 'ora';
 import shajs from 'sha.js';
 import * as chalk from 'chalk';
-import * as dotenv from 'dotenv';
 
 const { Client } = pg.default;
 const { info, setLevel, error, log } = loglevel.default;
 const { red, white, yellow } = chalk.default;
 const doCommit = process.argv.find((arg) => arg.toLowerCase() === '--commit');
 let currentQuery = null;
-
-dotenv.config();
 
 /*
    Helper Functions
