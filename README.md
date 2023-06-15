@@ -45,11 +45,13 @@ Create a `.json` file to define the sequence in which the `.sql` files should be
 Provide the following environment variables for the Postgres connection:
 
 ```text
-PGHOST
-PGUSER
-PGDATABASE
-PGPASSWORD
-PGPORT
+PGHOST=<string, host of your pg instance>
+PGUSER=<string, user of your pg instance>
+PGDATABASE=<string, database name>
+PGPASSWORD=<string, password for the user>
+PGPORT=<number, port of your pg instance>
+PGSSLREQUIRE=<true/false, require ssl>
+PGSSLALLOWSELFSIGNED=<true/false, allow self-signed certificates>
 ```
 
 Run `node update-db.mjs` and update-db will perform the updates in **dry-run mode** (the actual updates will not be committed).

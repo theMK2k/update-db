@@ -22,16 +22,16 @@ import { existsSync, readdirSync, readFileSync } from "fs";
 import { join } from "path";
 import { exit } from "process";
 
-import * as pg from "pg";
+import pg from "pg";
 import loglevel from "loglevel";
 import ora from "ora";
 import shajs from "sha.js";
 import * as chalk from "chalk";
 
-const { Client } = pg.default;
 const { info, setLevel, error, log } = loglevel.default;
 const { red, white, yellow } = chalk.default;
 const doCommit = process.argv.find((arg) => arg.toLowerCase() === "--commit");
+const warnRLS = process.argv.find((arg) => arg.toLowerCase() === "--warn-rls");
 let currentQuery = null;
 
 /*
@@ -231,7 +231,7 @@ function printWarnings() {
       );
     });
   }
-  if (warnTablesWithoutRLS.length > 0) {
+  if (warnRLS && warnTablesWithoutRLS.length > 0) {
     warnTablesWithoutRLS.forEach((updateScriptFile) => {
       console.warn(
         `${yellow("WARNING:")} no RLS update script found for ${yellow(
@@ -242,23 +242,41 @@ function printWarnings() {
   }
 }
 
-const pgClient = new Client();
+function isTrue(value) {
+	return value === true || value === "true";
+}
+
+let pgClient = null;
 
 let currentOra = null;
 
 (async () => {
   try {
     currentOra = ora("connecting to DB").start();
-    await pgClient.connect({
-      host: process.env.PG_HOST,
-      port: +process.env.PG_PORT,
-      user: process.env.PG_USER,
-      password: process.env.PG_PASSWORD,
-      database: process.env.PG_DATABASE,
-      ssl: {
+    const options = {
+      host: process.env.PGHOST,
+      port: +process.env.PGPORT,
+      user: process.env.PGUSER,
+      password: process.env.PGPASSWORD,
+      database: process.env.PGDATABASE,
+    };
+    if (isTrue(process.env.PGSSLREQUIRE) || isTrue(process.env.PGSSLALLOWSELFSIGNED)) {
+      options.ssl = {
+        require: true,
         rejectUnauthorized: false,
-      },
-    });
+      };
+
+			if (isTrue(process.env.PGSSLREQUIRE)) {
+				options.ssl.require = true;
+			}
+			if (isTrue(process.env.PGSSLALLOWSELFSIGNED)) {
+				options.ssl.rejectUnauthorized = false;
+			}
+    }
+
+    const pool = new pg.Pool(options);
+    pgClient = await pool.connect();
+
     currentOra.succeed();
 
     currentOra = ora("managing public.db_updates").start();
@@ -346,7 +364,7 @@ let currentOra = null;
           )} ${white.bold(
             "WERE NOT COMMITTED"
           )} to the DB. Please use ${white.bold(
-            "yarn update-db --commit"
+            "update-db --commit"
           )} to do so.'`
         );
         exit(0);
