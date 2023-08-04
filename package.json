@@ -1,8 +1,8 @@
 {
-  "name": "update-db",
-  "version": "1.0.0",
+  "name": "update-pg",
+  "version": "0.0.1",
   "description": "a database update script for postgres migrations",
-  "main": "update-db.mjs",
+  "main": "update-pg.mjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

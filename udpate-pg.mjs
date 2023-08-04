@@ -1,11 +1,11 @@
 /*
-update-db
+update-pg
 
 Copyright (c) 2023, Jörg 'MK2k' Sonntag, Steffen Stolze
 
 Internet Consortium License (ISC)
 
-Update a DB from scripts provided in ./db/db-updates
+Update a Postgres DB from scripts provided in ./db/db-updates
 - already applied scripts are tracked in Table public.db_updates
   - if public.db_updates does not exist, it will be created
 - scripts are applied in the order given in ./db/db-updates.json
@@ -61,16 +61,16 @@ function injectDefaults(query) {
     "%DEFAULT_COLUMNS%",
     `-- default columns:
     ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
-  , ADD COLUMN IF NOT EXISTS created_by UUID NOT NULL DEFAULT COALESCE(auth.uid(), uuid('00000000-0000-0000-0000-000000000000'))
+  , ADD COLUMN IF NOT EXISTS created_by TEXT NOT NULL DEFAULT 'SYSTEM'
   , ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
-  , ADD COLUMN IF NOT EXISTS updated_by UUID NOT NULL DEFAULT COALESCE(auth.uid(), uuid('00000000-0000-0000-0000-000000000000'))
+  , ADD COLUMN IF NOT EXISTS updated_by TEXT NOT NULL DEFAULT 'SYSTEM'
   , ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE
-  , ADD COLUMN IF NOT EXISTS deleted_by UUID
+  , ADD COLUMN IF NOT EXISTS deleted_by TEXT
   , ADD COLUMN IF NOT EXISTS deleted_reason TEXT
 `
   );
 
-  // inject default trigger (updated_at, updated_by)
+  // inject default trigger (updated_at)
   newQuery = newQuery.replace(
     /%DEFAULT_TRIGGER\((.*?)\.(.*?)\)%/,
     `-- default trigger
@@ -83,7 +83,6 @@ $func$
 
 BEGIN
     NEW.updated_at := now();
-    NEW.updated_by := COALESCE(auth.uid(), uuid('00000000-0000-0000-0000-000000000000'));
     RETURN NEW;
 END;
 $func$;
@@ -310,10 +309,10 @@ let currentOra = null;
           join(UPDATE_SCRIPTS_LOCATION, updateScript)
         ).toString();
 
-        const sha256 = new shajs("sha256").update(script).digest("hex");
-
         // inject default columns and triggers if the placeholder exists
         script = injectDefaults(script);
+
+        const sha256 = new shajs("sha256").update(script).digest("hex");
 
         log("SCRIPT:", script);
 
@@ -343,8 +342,8 @@ let currentOra = null;
         await pgClient.query(currentQuery, [
           updateScript,
           sha256,
-          "00000000-0000-0000-0000-000000000000",
-          "00000000-0000-0000-0000-000000000000",
+          "SYSTEM",
+          "SYSTEM",
         ]);
         currentOra.succeed();
       }
